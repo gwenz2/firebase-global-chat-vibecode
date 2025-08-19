@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Group Chat</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #chatCard {
+      width: 400px;
+      max-width: 95%;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .message {
+      margin: 5px 0;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .me {
+      background: #d1ffd1;
+      align-self: flex-end;
+    }
+    .other {
+      background: #e0e0e0;
+      align-self: flex-start;
+    }
+    #inputArea {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+    #messageInput {
+      flex: 1;
+      border: none;
+      padding: 10px;
+      outline: none;
+    }
+    #sendBtn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+    }
+    #loginBtn, #logoutBtn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      cursor: pointer;
+    }
+    #loginBtn {
+      background: #4285F4;
+      color: white;
+      font-size: 16px;
+    }
+    #logoutBtn {
+      background: #f44336;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="chatCard">
+    <button id="loginBtn">Login with Google</button>
+    <div id="chatUI" style="display:none; flex:1; flex-direction:column;">
+      <div id="messages"></div>
+      <div id="inputArea">
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <button id="sendBtn">Send</button>
+      </div>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    // ✅ Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDgDw-8py40dvUpyvEJBkGufZXytxFvoDg",
+      authDomain: "simplegc-1fc48.firebaseapp.com",
+      projectId: "simplegc-1fc48",
+      storageBucket: "simplegc-1fc48.firebasestorage.app",
+      messagingSenderId: "431674118694",
+      appId: "1:431674118694:web:6ea21cfc0c91cbed82cce7",
+      measurementId: "G-70P7G9NERH"
+    };
+
+    // ✅ Init Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const chatUI = document.getElementById('chatUI');
+    const messagesDiv = document.getElementById('messages');
+    const sendBtn = document.getElementById('sendBtn');
+    const messageInput = document.getElementById('messageInput');
+
+    let currentUser = null;
+
+    // ✅ Google login
+    loginBtn.onclick = async () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        await auth.signInWithPopup(provider);
+      } catch (err) {
+        alert(err.message);
+      }
+    };
+
+    // ✅ Logout
+    logoutBtn.onclick = () => auth.signOut();
+
+    // ✅ Auth state change
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        loginBtn.style.display = "none";
+        chatUI.style.display = "flex";
+        loadMessages();
+      } else {
+        currentUser = null;
+        loginBtn.style.display = "block";
+        chatUI.style.display = "none";
+        messagesDiv.innerHTML = "";
+      }
+    });
+
+    // ✅ Send message
+    sendBtn.onclick = async () => {
+      const text = messageInput.value.trim();
+      if (text) {
+        await db.collection("messages").add({
+          text,
+          uid: currentUser.uid,
+          name: currentUser.displayName,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        messageInput.value = "";
+      }
+    };
+
+    // ✅ Load messages live
+    function loadMessages() {
+      db.collection("messages")
+        .orderBy("timestamp")
+        .onSnapshot(snapshot => {
+          messagesDiv.innerHTML = "";
+          snapshot.forEach(doc => {
+            const msg = doc.data();
+            const div = document.createElement("div");
+            div.classList.add("message");
+            div.classList.add(msg.uid === currentUser.uid ? "me" : "other");
+            div.innerText = msg.name + ": " + msg.text;
+            messagesDiv.appendChild(div);
+          });
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+    }
+  </script>
+</body>
+</html>
