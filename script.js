@@ -9,26 +9,10 @@ const firebaseConfig = {
   measurementId: "G-70P7G9NERH"
 };
 
-
 // ✅ Init Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-
-// ✅ Handle redirect result
-auth.getRedirectResult()
-  .then((result) => {
-    if (result.user) {
-      console.log("Redirect login successful:", result.user);
-      // user will also be caught by onAuthStateChanged
-    }
-  })
-  .catch((error) => {
-    if (error.code) {
-      console.error("Redirect login error:", error.message);
-    }
-  });
-
 
 // DOM Elements
 const loginScreen = document.getElementById('loginScreen');
@@ -64,20 +48,19 @@ messageInput.addEventListener('keydown', function(e) {
   }
 });
 
-// ✅ Google login (use redirect instead of popup)
+// ✅ Google login
 loginBtn.onclick = async () => {
   const provider = new firebase.auth.GoogleAuthProvider();
   try {
     loginBtn.innerHTML = '<div class="spinner"></div> Signing in...';
     loginBtn.disabled = true;
-    await auth.signInWithRedirect(provider);   // 👈 FIXED
+    await auth.signInWithPopup(provider);
   } catch (err) {
     console.error('Login error:', err);
     alert('Login failed. Please try again.');
     resetLoginButton();
   }
 };
-
 
 // ✅ Reset login button to original state
 function resetLoginButton() {
