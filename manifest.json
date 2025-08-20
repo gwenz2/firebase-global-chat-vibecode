@@ -1,7 +1,7 @@
 {
   "name": "Firebase Global Chat",
   "short_name": "ChatApp",
-  "start_url": ".",
+  "start_url": "/firebase-global-chat-vibecode/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1976d2",
